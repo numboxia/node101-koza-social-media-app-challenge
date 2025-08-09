@@ -23,7 +23,7 @@ app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({mongoUrl: process.env.MONGODB_URI})
+    store: connectMongo.create({mongoUrl: process.env.MONGODB_URI})
 }));
 
 mongoose.connect(process.env.MONGODB_URI)
@@ -31,14 +31,39 @@ mongoose.connect(process.env.MONGODB_URI)
     .catch(err => console.error("Oi sorry brotha but we couldn't managed to connect", err));
 
 app.use('/', require('./routes/auth'));
+app.use('/main', require('./routes/main'));
 app.use('/chat', require('./routes/chat'));
 
-io.on('connection', (socket)=>{
+const Message = require('./models/message'); 
+
+io.on('connection', socket => {
     console.log("User connected to chat");
-    socket.on('send message', (data) => {
-        io.emit('received message', data);
+
+    socket.on('joinRoom', ({ currentUserId, otherUserId }) => {
+        const roomId = [currentUserId, otherUserId].sort().join('_');
+        socket.join(roomId);
+        console.log(`User joined room: ${roomId}`);
+    });
+
+    socket.on('sendMessage', async ({ sender, receiver, content }) => {
+        if (!content.trim()) return;
+
+        const message = new Message({ sender, receiver, content });
+        await message.save();
+
+        const roomId = [sender, receiver].sort().join('_');
+        io.to(roomId).emit('receiveMessage', {
+            sender,
+            content,
+            timestamp: message.timestamp
+        });
+    });
+
+    socket.on('disconnect', () => {
+        console.log("User disconnected from chat");
     });
 });
+
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
