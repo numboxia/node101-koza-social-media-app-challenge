@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login</title>
+    <title>Sign Up</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="auth-body">
     <div class="auth-container">
-        <h2>Login</h2>
-        <form action="/login" method="POST" class="auth-form">
+        <h2>Create Account</h2>
+        <form action="/signup" method="POST" class="auth-form">
             <div class="input-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" required>
@@ -18,9 +18,14 @@
                 <input type="password" id="password" name="password" required>
             </div>
 
-            <button type="submit" class="auth-button">Login</button>
+            <div class="input-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+            </div>
+
+            <button type="submit" class="auth-button">Sign Up</button>
         </form>
-        <p class="auth-link">Don't have an account? <a href="/signup">Register</a></p>
+        <p class="auth-link">Already have an account? <a href="/login">Login</a></p>
     </div>
 </body>
 </html>

@@ -1,6 +1,53 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>Chat</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-current-user="<%= currentUserId %>" data-other-user="<%= selectedFriend ? selectedFriend._id : '' %>">
+    <div class="chat-container">
+        
+        <div class="friends-list">
+            <h3>Friends</h3>
+            <ul>
+                <% friends.forEach(friend => { %>
+                    <li>
+                        <a href="/chat?friend=<%= friend._id %>" class="<%= selectedFriend && friend._id.equals(selectedFriend._id) ? 'active' : '' %>">
+                            <%= friend.username %>
+                        </a>
+                    </li>
+                <% }) %>
+            </ul>
 
+            <form action="/chat/add-friend" method="POST" class="add-friend-form">
+                <input type="text" name="username" placeholder="Friend's username" required>
+                <button type="submit">Add Friend</button>
+            </form>
 
+            <p><a href="/main">⬅ Back to Main Menu</a></p>
+        </div>
 
+        <div class="chat-window">
+            <% if (selectedFriend) { %>
+                <h3>Chat with <%= selectedFriend.username %></h3>
+                <div id="messages">
+                    <% messages.forEach(msg => { %>
+                        <div class="message <%= msg.sender.toString() === currentUserId ? 'me' : 'them' %>">
+                            <%= msg.content %>
+                        </div>
+                    <% }) %>
+                </div>
+                <form id="chatForm">
+                    <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
+                    <button type="submit">Send</button>
+                </form>
+            <% } else { %>
+                <p>Select a friend to start chatting</p>
+            <% } %>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/chat.js"></script>
+</body>
 </html>

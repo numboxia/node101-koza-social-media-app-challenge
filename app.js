@@ -13,28 +13,42 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
 
-app.use(express.urlencoded({extended: true}));
-app.use(express.static('public'));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.set('view engine','ejs');
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    store: connectMongo.create({mongoUrl: process.env.MONGODB_URI})
-}));
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        store: connectMongo.create({
+            mongoUrl: process.env.MONGODB_URI
+        })
+    })
+);
 
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log("MongoDB connection successful brotha"))
-    .catch(err => console.error("Oi sorry brotha but we couldn't managed to connect", err));
+mongoose
+    .connect(process.env.MONGODB_URI)
+    .then(() => console.log("MongoDB connection successful"))
+    .catch(err => console.error("MongoDB connection failed", err));
+
+app.get('/', (req, res) => {
+    if (req.session && req.session.userId) {
+        return res.redirect('/main');
+    }
+    res.redirect('/login');
+});
 
 app.use('/', require('./routes/auth'));
 app.use('/main', require('./routes/main'));
 app.use('/chat', require('./routes/chat'));
 
-const Message = require('./models/message'); 
+const Message = require('./models/Message');
 
 io.on('connection', socket => {
     console.log("User connected to chat");
@@ -46,7 +60,7 @@ io.on('connection', socket => {
     });
 
     socket.on('sendMessage', async ({ sender, receiver, content }) => {
-        if (!content.trim()) return;
+        if (!content || !content.trim()) return;
 
         const message = new Message({ sender, receiver, content });
         await message.save();
@@ -64,11 +78,7 @@ io.on('connection', socket => {
     });
 });
 
-
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log("Haha brotha server is running at http://localhost:${PORT}");
+    console.log(`Server running at http://localhost:${PORT}`);
 });
-
-
-

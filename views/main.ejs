@@ -1,5 +1,28 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>Main Menu</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="main-body">
+    <header class="main-header">
+        <h2>Welcome, <%= username %> 👋</h2>
+        <nav>
+            <a href="/chat" class="main-link">💬 Chat</a>
+            <a href="/logout" class="main-link">🚪 Logout</a>
+        </nav>
+    </header>
 
+    <main class="main-container">
+        <section class="post-card">
+            <img src="https://via.placeholder.com/500x300" alt="Sample Post">
+            <p>This is a sample post.</p>
+        </section>
 
+        <section class="post-card">
+            <img src="https://via.placeholder.com/500x300" alt="Another Post">
+            <p>This is another example post.</p>
+        </section>
+    </main>
+</body>
 </html>
