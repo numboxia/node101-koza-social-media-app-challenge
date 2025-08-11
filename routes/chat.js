@@ -11,27 +11,44 @@ function requireLogin(req, res, next) {
 }
 
 router.get('/', requireLogin, async (req, res) => {
-    const currentUser = await User.findById(req.session.userId).populate('friends');
-    let selectedFriend = null;
-    let messages = [];
+    const user = await User.findById(req.session.userId)
+        .populate('friends')
+        .populate('friendRequests');
 
-    if (req.query.friend) {
-        selectedFriend = await User.findById(req.query.friend);
-        if (selectedFriend) {
-            messages = await Message.find({
-                $or: [
-                    { sender: req.session.userId, receiver: selectedFriend._id },
-                    { sender: selectedFriend._id, receiver: req.session.userId }
-                ]
-            }).sort({ timestamp: 1 });
-        }
-    }
+    const contacts = [...user.friends, ...user.friendRequests];
 
     res.render('chat', {
-        friends: currentUser.friends,
-        selectedFriend,
-        messages,
-        currentUserId: req.session.userId
+        currentUserId: req.session.userId,
+        contacts,
+        friendRequests: user.friendRequests,
+        selectedFriend: null,
+        messages: []
+    });
+});
+
+router.get('/:friendId', requireLogin, async (req, res) => {
+    const user = await User.findById(req.session.userId)
+        .populate('friends')
+        .populate('friendRequests');
+
+    const contacts = [...user.friends, ...user.friendRequests];
+
+    const friend = await User.findById(req.params.friendId);
+    if (!friend) return res.redirect('/chat');
+
+    const messages = await Message.find({
+        $or: [
+            { sender: req.session.userId, receiver: req.params.friendId },
+            { sender: req.params.friendId, receiver: req.session.userId }
+        ]
+    }).sort({ timestamp: 1 });
+
+    res.render('chat', {
+        currentUserId: req.session.userId,
+        contacts,
+        friendRequests: user.friendRequests,
+        selectedFriend: friend,
+        messages
     });
 });
 
@@ -49,16 +66,44 @@ router.post('/add-friend', requireLogin, async (req, res) => {
 
     const currentUser = await User.findById(req.session.userId);
 
-    if (!currentUser.friends.includes(friend._id)) {
-        currentUser.friends.push(friend._id);
-        await currentUser.save();
-    }
-
-    if (!friend.friends.includes(currentUser._id)) {
-        friend.friends.push(currentUser._id);
+    if (!friend.friendRequests.includes(currentUser._id) &&
+        !friend.friends.includes(currentUser._id)) {
+        friend.friendRequests.push(currentUser._id);
         await friend.save();
     }
 
+    res.redirect('/chat');
+});
+
+router.post('/accept-friend/:id', requireLogin, async (req, res) => {
+    const currentUser = await User.findById(req.session.userId);
+    const requester = await User.findById(req.params.id);
+
+    currentUser.friendRequests = currentUser.friendRequests.filter(
+        id => !id.equals(requester._id)
+    );
+
+    if (!currentUser.friends.includes(requester._id)) {
+        currentUser.friends.push(requester._id);
+    }
+    if (!requester.friends.includes(currentUser._id)) {
+        requester.friends.push(currentUser._id);
+    }
+
+    await currentUser.save();
+    await requester.save();
+
+    res.redirect('/chat');
+});
+
+router.post('/deny-friend/:id', requireLogin, async (req, res) => {
+    const currentUser = await User.findById(req.session.userId);
+
+    currentUser.friendRequests = currentUser.friendRequests.filter(
+        id => !id.equals(req.params.id)
+    );
+
+    await currentUser.save();
     res.redirect('/chat');
 });
 

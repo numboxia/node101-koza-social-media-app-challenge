@@ -10,11 +10,21 @@
         <div class="friends-list">
             <h3>Friends</h3>
             <ul>
-                <% friends.forEach(friend => { %>
+                <% contacts.forEach(contact => { %>
                     <li>
-                        <a href="/chat?friend=<%= friend._id %>" class="<%= selectedFriend && friend._id.equals(selectedFriend._id) ? 'active' : '' %>">
-                            <%= friend.username %>
-                        </a>
+                        <% if (friendRequests.some(r => r._id.toString() === contact._id.toString())) { %>
+                            <%= contact.username %>
+                            <form action="/friends/accept/<%= contact._id %>" method="POST" style="display:inline;">
+                                <button type="submit">✅</button>
+                            </form>
+                            <form action="/friends/deny/<%= contact._id %>" method="POST" style="display:inline;">
+                                <button type="submit">❌</button>
+                            </form>
+                        <% } else { %>
+                            <a class="chat-link" href="/chat/<%= contact._id %>">
+                                <%= contact.username %>
+                            </a>
+                        <% } %>
                     </li>
                 <% }) %>
             </ul>

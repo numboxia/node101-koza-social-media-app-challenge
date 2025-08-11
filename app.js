@@ -15,9 +15,7 @@ const io = socketIO(server);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-
 app.use(express.static(path.join(__dirname, 'public')));
-
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -35,7 +33,7 @@ app.use(
 mongoose
     .connect(process.env.MONGODB_URI)
     .then(() => console.log("MongoDB connection successful"))
-    .catch(err => console.error("MongoDB connection failed", err));
+    .catch(err => console.error("MongoDB connection failed:", err));
 
 app.get('/', (req, res) => {
     if (req.session && req.session.userId) {
@@ -47,6 +45,7 @@ app.get('/', (req, res) => {
 app.use('/', require('./routes/auth'));
 app.use('/main', require('./routes/main'));
 app.use('/chat', require('./routes/chat'));
+app.use('/friends', require('./routes/friends'));
 
 const Message = require('./models/Message');
 
@@ -62,15 +61,26 @@ io.on('connection', socket => {
     socket.on('sendMessage', async ({ sender, receiver, content }) => {
         if (!content || !content.trim()) return;
 
-        const message = new Message({ sender, receiver, content });
-        await message.save();
+        try {
+            const message = new Message({
+                sender,
+                receiver,
+                content
+            });
+            await message.save();
 
-        const roomId = [sender, receiver].sort().join('_');
-        io.to(roomId).emit('receiveMessage', {
-            sender,
-            content,
-            timestamp: message.timestamp
-        });
+            const roomId = [sender, receiver].sort().join('_');
+            io.to(roomId).emit('receiveMessage', {
+                sender,
+                receiver,
+                content,
+                timestamp: message.timestamp
+            });
+
+            console.log(`Message sent in room ${roomId}`);
+        } catch (err) {
+            console.error("Error saving message:", err);
+        }
     });
 
     socket.on('disconnect', () => {

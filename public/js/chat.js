@@ -17,11 +17,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const content = input.value.trim();
         if (!content) return;
 
+        appendMessage(content, "me");
+
         socket.emit("sendMessage", {
             sender: currentUserId,
             receiver: otherUserId,
             content
         });
+
         input.value = "";
     });
 
@@ -30,11 +33,15 @@ document.addEventListener("DOMContentLoaded", () => {
             (data.sender === currentUserId && data.receiver === otherUserId) ||
             (data.sender === otherUserId && data.receiver === currentUserId)
         ) {
-            const div = document.createElement("div");
-            div.className = "message " + (data.sender === currentUserId ? "me" : "them");
-            div.textContent = data.content;
-            messagesDiv.appendChild(div);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            appendMessage(data.content, data.sender === currentUserId ? "me" : "them");
         }
     });
+
+    function appendMessage(text, type) {
+        const div = document.createElement("div");
+        div.className = "message " + type;
+        div.textContent = text;
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
 });
